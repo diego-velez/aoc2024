@@ -6,13 +6,13 @@ import (
 )
 
 func dayOneResult() (int, int) {
-	leftList, rightList := parseFile()
+	leftList, rightList := parseDayOneFile()
 	bubbleSort(leftList)
 	bubbleSort(rightList)
 	return totalDistance(leftList, rightList), similarityScore(leftList, rightList)
 }
 
-func parseFile() ([]int, []int) {
+func parseDayOneFile() ([]int, []int) {
 	file, err := os.Open("resources/day_one_input")
 	if err != nil {
 		panic("Cannot open file")
@@ -29,7 +29,7 @@ func parseFile() ([]int, []int) {
 		if n > 0 {
 			for _, b := range buffer[:n] {
 				if b == '\n' {
-					d1, d2 := parseLine(line)
+					d1, d2 := parseDayOneLine(line)
 					leftList = append(leftList, d1)
 					rightList = append(rightList, d2)
 					line = ""
@@ -41,7 +41,7 @@ func parseFile() ([]int, []int) {
 
 		if err != nil {
 			if line != "" {
-				d1, d2 := parseLine(line)
+				d1, d2 := parseDayOneLine(line)
 				leftList = append(leftList, d1)
 				rightList = append(rightList, d2)
 			}
@@ -51,7 +51,7 @@ func parseFile() ([]int, []int) {
 	return leftList, rightList
 }
 
-func parseLine(line string) (int, int) {
+func parseDayOneLine(line string) (int, int) {
 	num1, num2 := "", ""
 	onSecond := false
 	for _, char := range line {
