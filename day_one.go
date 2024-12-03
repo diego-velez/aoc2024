@@ -5,8 +5,11 @@ import (
 	"strconv"
 )
 
-func dayOneResult() int {
-	return totalDistance(parseFile())
+func dayOneResult() (int, int) {
+	leftList, rightList := parseFile()
+	bubbleSort(leftList)
+	bubbleSort(rightList)
+	return totalDistance(leftList, rightList), similarityScore(leftList, rightList)
 }
 
 func parseFile() ([]int, []int) {
@@ -69,10 +72,24 @@ func parseLine(line string) (int, int) {
 	return d1, d2
 }
 
-func totalDistance(leftList, rightList []int) int {
-	bubbleSort(leftList)
-	bubbleSort(rightList)
+func similarityScore(leftList, rightList []int) int {
+	var occurences map[int]int = make(map[int]int)
+	for _, num := range rightList {
+		if occurences[num] == 0 {
+			occurences[num] = 1
+		} else {
+			occurences[num]++
+		}
+	}
 
+	result := 0
+	for _, num := range leftList {
+		result += num * occurences[num]
+	}
+	return result
+}
+
+func totalDistance(leftList, rightList []int) int {
 	total := 0
 	for i := 0; i < len(leftList); i++ {
 		var delta int
