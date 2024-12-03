@@ -1,10 +1,6 @@
 package main
 
-func main() {
-	dayTwoResult()
-}
-
-func dayTwoResult() {
+func dayTwoResult() int {
 	reports := [][]int{
 		{3, 6, 7, 9, 11, 8},
 		{21, 24, 25, 26, 29, 30, 32, 32},
@@ -1007,7 +1003,7 @@ func dayTwoResult() {
 		{99, 96, 93, 91, 88, 85, 82, 80},
 		{22, 21, 18, 16, 14, 13, 12, 10},
 	}
-	println(totalSafeReports(reports))
+	return totalSafeReports(reports)
 }
 
 func totalSafeReports(reports [][]int) int {
