@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func dayFourResult() int {
+func dayFourResult() (int, int) {
 	var data [][]string
 	ParseFile("resources/day_four_input", func(line string) {
 		var row []string
@@ -18,20 +18,22 @@ func dayFourResult() int {
 	return occurences(data)
 }
 
-func occurences(data [][]string) int {
-	result := 0
+func occurences(data [][]string) (int, int) {
+	resultPartOne := 0
+	resultPartTwo := 0
 
 	for rowIndex, row := range data {
 		for columnIndex, char := range row {
-			if char != "X" {
-				continue
+			// We look for the X of XMAS for the first part, and the center A for X-MAS for the second part
+			if char == "X" {
+				resultPartOne += checkHorizontal(row, columnIndex) + checkVertical(data, rowIndex, columnIndex) + checkDiagonal(data, rowIndex, columnIndex)
+			} else if char == "A" {
+				resultPartTwo += checkCrossMas(data, rowIndex, columnIndex)
 			}
-
-			result += checkHorizontal(row, columnIndex) + checkVertical(data, rowIndex, columnIndex) + checkDiagonal(data, rowIndex, columnIndex)
 		}
 	}
 
-	return result
+	return resultPartOne, resultPartTwo
 }
 
 func checkHorizontal(row []string, i int) int {
@@ -89,14 +91,14 @@ func checkVertical(data [][]string, row, column int) int {
 func checkDiagonal(data [][]string, row, column int) int {
 	result := 0
 
-	canGoTop := row-3 >= 0
-	canGoBottom := row+3 <= len(data)-1
+	canGoUp := row-3 >= 0
+	canGoDown := row+3 <= len(data)-1
 
 	canGoLeft := column-3 >= 0
 	canGoRight := column+3 <= len(data[row])-1
 
 	// Top-right
-	if canGoTop && canGoRight {
+	if canGoUp && canGoRight {
 		word := "X" + data[row-1][column+1] + data[row-2][column+2] + data[row-3][column+3]
 		if word == "XMAS" {
 			result++
@@ -104,7 +106,7 @@ func checkDiagonal(data [][]string, row, column int) int {
 	}
 
 	// Top-left
-	if canGoTop && canGoLeft {
+	if canGoUp && canGoLeft {
 		word := "X" + data[row-1][column-1] + data[row-2][column-2] + data[row-3][column-3]
 		if word == "XMAS" {
 			result++
@@ -112,7 +114,7 @@ func checkDiagonal(data [][]string, row, column int) int {
 	}
 
 	// Bottom-right
-	if canGoBottom && canGoRight {
+	if canGoDown && canGoRight {
 		word := "X" + data[row+1][column+1] + data[row+2][column+2] + data[row+3][column+3]
 		if word == "XMAS" {
 			result++
@@ -120,7 +122,7 @@ func checkDiagonal(data [][]string, row, column int) int {
 	}
 
 	// Bottom-left
-	if canGoBottom && canGoLeft {
+	if canGoDown && canGoLeft {
 		word := "X" + data[row+1][column-1] + data[row+2][column-2] + data[row+3][column-3]
 		if word == "XMAS" {
 			result++
@@ -128,4 +130,34 @@ func checkDiagonal(data [][]string, row, column int) int {
 	}
 
 	return result
+}
+
+func checkCrossMas(data [][]string, row, column int) int {
+	canGoLeft := column-1 >= 0
+	canGoRight := column+1 <= len(data[row])-1
+
+	canGoUp := row-1 >= 0
+	canGoDown := row+1 <= len(data)-1
+
+	if !canGoLeft || !canGoRight || !canGoUp || !canGoDown {
+		return 0
+	}
+
+	topLeft := data[row-1][column-1]
+	topRight := data[row-1][column+1]
+
+	bottomLeft := data[row+1][column-1]
+	bottomRight := data[row+1][column+1]
+
+	// Goes to the right
+	crossMasLeft := topLeft == "S" && bottomLeft == "S" && topRight == "M" && bottomRight == "M"
+	crossMasRight := topLeft == "M" && bottomLeft == "M" && topRight == "S" && bottomRight == "S"
+	crossMasUp := bottomLeft == "M" && bottomRight == "M" && topLeft == "S" && topRight == "S"
+	crossMasDown := bottomLeft == "S" && bottomRight == "S" && topLeft == "M" && topRight == "M"
+
+	if crossMasLeft || crossMasRight || crossMasUp || crossMasDown {
+		return 1
+	}
+
+	return 0
 }
