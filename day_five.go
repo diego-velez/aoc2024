@@ -6,11 +6,6 @@ import (
 	"strings"
 )
 
-type Rule struct {
-	Before int
-	After  int
-}
-
 func dayFiveResult() (int, int) {
 	rules := make(map[int][]int)
 	var pages [][]int
