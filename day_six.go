@@ -74,7 +74,7 @@ func calcDistinctPositions(path [][]rune) int {
 func currentPosition(path [][]rune) (int, int) {
 	for rowIndex, row := range path {
 		for columnIndex, char := range row {
-			if char != '.' && char != '#' && char != 'X' {
+			if char == '<' || char == '>' || char == '^' || char == 'v' {
 				return rowIndex, columnIndex
 			}
 		}
