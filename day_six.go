@@ -24,23 +24,74 @@ func daySixResult() (int, int) {
 		path = append(path, row)
 	})
 
-	distinctPositions, pathVisualization := distinctPositions(path, nil)
-	return distinctPositions, calcPossibleObstructions(pathVisualization)
+	traversedPath := traversePath(path, func(_ Coord, _ Coord, _ Direction, _ Direction) bool { return true }, true)
+	return calcDistinctPositions(traversedPath), calcPossibleObstructions(path, traversedPath)
 }
 
-func calcPossibleObstructions(path [][]rune) int {
+func calcPossibleObstructions(ogPath, path [][]rune) int {
+	p := getPossibleObstructionPlaces(path)
+
+	result := 0
+	for _, coord := range p {
+		result += checkCycleWithObstacle(ogPath, coord)
+	}
+
+	return result
+}
+
+// TODO: incomplete
+// Should return 1 if it creates a cycle, 0 otherwise
+// Probably should create a function that just traverses the guard's path and takes in another
+// function that runs on each move, then I could chain the functions for part 1 and 2 respectively
+func checkCycleWithObstacle(path [][]rune, coord Coord) int {
+	path[coord.Row][coord.Column] = '#'
+
+	doesCycle := false
+	traversePath(path, func(currentPosition, nextPosition Coord, currentDirection, nextDirection Direction) bool {
+		validPosition := nextPosition.Row >= 0 && nextPosition.Row < len(path) && nextPosition.Column >= 0 && nextPosition.Column < len(path[0])
+		if !validPosition {
+			return true
+		}
+
+		nextChar := path[nextPosition.Row][nextPosition.Column]
+		if nextChar == '|' || nextChar == '-' || nextChar == '+' {
+			doesCycle = true
+		}
+		return !doesCycle
+	}, true)
+
+	path[coord.Row][coord.Column] = '.'
+
+	if doesCycle {
+		return 1
+	}
 	return 0
 }
 
 func getPossibleObstructionPlaces(path [][]rune) []Coord {
-	// TODO: should probably use a set for the possibleelocations
-	for _, row := range path {
-		for _, char := range row {
+	var possibleObstructionPlaces map[Coord]bool = make(map[Coord]bool)
+	for rowIndex, row := range path {
+		for columnIndex, char := range row {
 			if char == '#' {
+				p := getPossibleObstructionsForObsticle(path, rowIndex, columnIndex)
+				addToSet(&possibleObstructionPlaces, p)
 			}
 		}
 	}
-	return []Coord{}
+
+	var result []Coord
+	for coord := range possibleObstructionPlaces {
+		result = append(result, coord)
+	}
+	return result
+}
+
+func addToSet(out *map[Coord]bool, coords []Coord) {
+	for _, coord := range coords {
+		if !(*out)[coord] {
+			(*out)[coord] = true
+		}
+	}
 }
 
 func getPossibleObstructionsForObsticle(path [][]rune, rowIndex, columnIndex int) []Coord {
@@ -52,10 +103,10 @@ func getPossibleObstructionsForObsticle(path [][]rune, rowIndex, columnIndex int
 			// Check quadrant 2, column + 1 coming from left
 			// check quadrant 3, row - 1 coming from bottom
 			// Check quadrant 4, column - 1 coming from right
-			quadrant1 := thisRowIndex == rowIndex+1 && char == '|'
-			quadrant2 := thisColumnIndex == columnIndex+1 && char == '-'
-			quadrant3 := thisRowIndex == rowIndex-1 && char == '|'
-			quadrant4 := thisColumnIndex == columnIndex-1 && char == '-'
+			quadrant1 := thisRowIndex < len(path) && thisRowIndex == rowIndex+1 && char == '|'
+			quadrant2 := thisColumnIndex < len(row) && thisColumnIndex == columnIndex+1 && char == '-'
+			quadrant3 := thisRowIndex >= 0 && thisRowIndex == rowIndex-1 && char == '|'
+			quadrant4 := thisColumnIndex >= 0 && thisColumnIndex == columnIndex-1 && char == '-'
 			if quadrant1 || quadrant2 || quadrant3 || quadrant4 {
 				possibleLocations = append(possibleLocations, Coord{Row: thisRowIndex, Column: thisColumnIndex})
 			}
@@ -65,62 +116,65 @@ func getPossibleObstructionsForObsticle(path [][]rune, rowIndex, columnIndex int
 	return possibleLocations
 }
 
-func distinctPositions(path [][]rune, pathVis [][]rune) (int, [][]rune) {
+func traversePath(path [][]rune, shouldContinue func(Coord, Coord, Direction, Direction) bool, starting bool) [][]rune {
 	// NOTE: You can visualize here
-	// printMap(pathVis)
-	if pathVis == nil {
-		pathVis = deepCopyMap(path)
-	}
-
-	rowIndex, columnIndex := currentPosition(path)
-	direction, nextDirectionChar := heading(path[rowIndex][columnIndex])
+	printMap(path)
+	currentPosition := currentPosition(path)
+	currentDirection, nextChar := heading(path[currentPosition.Row][currentPosition.Column])
+	nextDirection, _ := heading(nextChar)
 
 	blocked := false
+	firstTime := true
 	for !blocked {
-		frontRowIndex, frontColumnIndex := rowIndex, columnIndex
-		switch direction {
+		nextPosition := currentPosition
+		switch currentDirection {
 		case LEFT:
-			frontColumnIndex--
+			nextPosition.Column--
 		case RIGHT:
-			frontColumnIndex++
+			nextPosition.Column++
 		case UP:
-			frontRowIndex--
+			nextPosition.Row--
 		case DOWN:
-			frontRowIndex++
+			nextPosition.Row++
 		}
 
-		outOfBounds := frontRowIndex < 0 || frontRowIndex >= len(path) || frontColumnIndex < 0 || frontColumnIndex >= len(path[0])
+		if !shouldContinue(currentPosition, nextPosition, currentDirection, nextDirection) {
+			return path
+		}
+
+		outOfBounds := nextPosition.Row < 0 || nextPosition.Row >= len(path) || nextPosition.Column < 0 || nextPosition.Column >= len(path[0])
 		if outOfBounds {
-			return calcDistinctPositions(path), pathVis
+			return path
 		}
 
-		blocked = path[frontRowIndex][frontColumnIndex] == '#'
+		blocked = path[nextPosition.Row][nextPosition.Column] == '#'
 		if !blocked {
-			path[frontRowIndex][frontColumnIndex] = path[rowIndex][columnIndex]
+			path[nextPosition.Row][nextPosition.Column] = path[currentPosition.Row][currentPosition.Column]
 
-			path[rowIndex][columnIndex] = 'X'
-
-			if direction == UP || direction == DOWN {
-				pathVis[frontRowIndex][frontColumnIndex] = '|'
+			if firstTime && !starting {
+				firstTime = false
+				starting = false
+				path[currentPosition.Row][currentPosition.Column] = '+'
+			} else if currentDirection == UP || currentDirection == DOWN {
+				path[currentPosition.Row][currentPosition.Column] = '|'
 			} else {
-				pathVis[frontRowIndex][frontColumnIndex] = '-'
+				path[currentPosition.Row][currentPosition.Column] = '-'
 			}
 
-			rowIndex, columnIndex = frontRowIndex, frontColumnIndex
+			currentPosition = nextPosition
 		}
 	}
 
-	path[rowIndex][columnIndex] = nextDirectionChar
-	pathVis[rowIndex][columnIndex] = '+'
+	path[currentPosition.Row][currentPosition.Column] = nextChar
 
-	return distinctPositions(path, pathVis)
+	return traversePath(path, shouldContinue, false)
 }
 
 func calcDistinctPositions(path [][]rune) int {
 	total := 1
 	for _, row := range path {
 		for _, char := range row {
-			if char == 'X' {
+			if char == '|' || char == '-' || char == '+' {
 				total++
 			}
 		}
@@ -128,11 +182,11 @@ func calcDistinctPositions(path [][]rune) int {
 	return total
 }
 
-func currentPosition(path [][]rune) (int, int) {
+func currentPosition(path [][]rune) Coord {
 	for rowIndex, row := range path {
 		for columnIndex, char := range row {
 			if char == '<' || char == '>' || char == '^' || char == 'v' {
-				return rowIndex, columnIndex
+				return Coord{Row: rowIndex, Column: columnIndex}
 			}
 		}
 	}
