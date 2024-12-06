@@ -6,4 +6,5 @@ func main() {
 	println(dayThreeResult())
 	println(dayFourResult())
 	println(dayFiveResult())
+	println(daySixResult())
 }
