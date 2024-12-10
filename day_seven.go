@@ -52,10 +52,13 @@ func dvt(testValue int, sumSoFar int, nums []int) bool {
 		return false
 	}
 
+	num1, num2 := strconv.Itoa(sumSoFar), strconv.Itoa(nums[0])
+
+	concat, _ := strconv.Atoi(num1 + num2)
 	sum := sumSoFar + nums[0]
 	mult := sumSoFar * nums[0]
 
 	otherNums := nums[1:]
 
-	return dvt(testValue, sum, otherNums) || dvt(testValue, mult, otherNums)
+	return dvt(testValue, concat, otherNums) || dvt(testValue, sum, otherNums) || dvt(testValue, mult, otherNums)
 }
