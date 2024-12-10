@@ -24,7 +24,8 @@ func daySixResult() (int, int) {
 		path = append(path, row)
 	})
 
-	traversedPath := traversePath(path, func(_ Coord, _ Coord, _ Direction, _ Direction) bool { return true }, true)
+	copyPath := deepCopyPath(path)
+	traversedPath := traversePath(copyPath, func(_ Coord, _ Coord, _ Direction) bool { return true }, true)
 	return calcDistinctPositions(traversedPath), calcPossibleObstructions(path, traversedPath)
 }
 
@@ -33,7 +34,8 @@ func calcPossibleObstructions(ogPath, path [][]rune) int {
 
 	result := 0
 	for _, coord := range p {
-		result += checkCycleWithObstacle(ogPath, coord)
+		ogPathCopy := deepCopyPath(ogPath)
+		result += checkCycleWithObstacle(ogPathCopy, coord)
 	}
 
 	return result
@@ -44,25 +46,26 @@ func calcPossibleObstructions(ogPath, path [][]rune) int {
 // Probably should create a function that just traverses the guard's path and takes in another
 // function that runs on each move, then I could chain the functions for part 1 and 2 respectively
 func checkCycleWithObstacle(path [][]rune, coord Coord) int {
+	startingPosition := currentPosition(path)
+	startingDirection, _ := heading(path[startingPosition.Row][startingPosition.Column])
 	path[coord.Row][coord.Column] = '#'
 
-	doesCycle := false
-	traversePath(path, func(currentPosition, nextPosition Coord, currentDirection, nextDirection Direction) bool {
-		validPosition := nextPosition.Row >= 0 && nextPosition.Row < len(path) && nextPosition.Column >= 0 && nextPosition.Column < len(path[0])
-		if !validPosition {
+	doesCycle, isStarting := false, true
+	traversePath(path, func(currentPosition, nextPosition Coord, currentDirection Direction) bool {
+		if isStarting {
+			isStarting = false
 			return true
 		}
 
-		nextChar := path[nextPosition.Row][nextPosition.Column]
-		if nextChar == '|' || nextChar == '-' || nextChar == '+' {
+		// BUG: No siempre loops por el starting position pero it does loop
+		if startingPosition == currentPosition && startingDirection == currentDirection {
 			doesCycle = true
 		}
 		return !doesCycle
 	}, true)
 
-	path[coord.Row][coord.Column] = '.'
-
 	if doesCycle {
+		printPath(path)
 		return 1
 	}
 	return 0
@@ -116,12 +119,11 @@ func getPossibleObstructionsForObsticle(path [][]rune, rowIndex, columnIndex int
 	return possibleLocations
 }
 
-func traversePath(path [][]rune, shouldContinue func(Coord, Coord, Direction, Direction) bool, starting bool) [][]rune {
+func traversePath(path [][]rune, shouldContinue func(Coord, Coord, Direction) bool, starting bool) [][]rune {
 	// NOTE: You can visualize here
-	printMap(path)
+	// printPath(path)
 	currentPosition := currentPosition(path)
 	currentDirection, nextChar := heading(path[currentPosition.Row][currentPosition.Column])
-	nextDirection, _ := heading(nextChar)
 
 	blocked := false
 	firstTime := true
@@ -138,7 +140,7 @@ func traversePath(path [][]rune, shouldContinue func(Coord, Coord, Direction, Di
 			nextPosition.Row++
 		}
 
-		if !shouldContinue(currentPosition, nextPosition, currentDirection, nextDirection) {
+		if !shouldContinue(currentPosition, nextPosition, currentDirection) {
 			return path
 		}
 
@@ -207,7 +209,7 @@ func heading(char rune) (Direction, rune) {
 	panic("Guard is not a valid character")
 }
 
-func printMap(path [][]rune) {
+func printPath(path [][]rune) {
 	for _, row := range path {
 		for _, char := range row {
 			print(string(char))
@@ -217,7 +219,7 @@ func printMap(path [][]rune) {
 	println()
 }
 
-func deepCopyMap(path [][]rune) [][]rune {
+func deepCopyPath(path [][]rune) [][]rune {
 	pathCopy := make([][]rune, len(path))
 
 	for i, row := range path {
