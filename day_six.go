@@ -65,7 +65,7 @@ func checkCycleWithObstacle(path [][]rune, coord Coord) int {
 	}, true)
 
 	if doesCycle {
-		printPath(path)
+		// printPath(path)
 		return 1
 	}
 	return 0
